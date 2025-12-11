@@ -1,0 +1,5 @@
+{
+  "name": "Data Compare",
+  "description": "A professional CSV comparison and data reconciliation tool. Upload heterogeneous datasets, configure normalization rules, map keys, and visualize discrepancies.",
+  "requestFramePermissions": []
+}
