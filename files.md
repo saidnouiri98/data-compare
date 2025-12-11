@@ -1,0 +1,16 @@
+.gitignore
+App.tsx
+index.html
+index.tsx
+metadata.json
+package-lock.json
+package.json
+README.md
+tsconfig.json
+types.ts
+vite.config.ts
+components/ConfigPanel.tsx
+components/FileUploader.tsx
+components/LogPanel.tsx
+components/ResultsDashboard.tsx
+services/csvService.ts
