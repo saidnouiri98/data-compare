@@ -150,6 +150,7 @@ const getNormalizedRow = (
 interface ProcessedSource {
   validUniqueRows: any[];
   duplicatesCount: number;
+  duplicatedRows: { row: any; count: number }[];
   keyToRowsMap: Map<string, any[]>;
   allKeys: Set<string>;
 }
@@ -168,8 +169,8 @@ const processSource = (
   );
 
   // 1. Deduplicate Exact Rows (Post-Normalization)
-  // We use a Map of JSON-stringified row -> row object to handle exact matches
-  const uniqueRowsMap = new Map<string, any>();
+  // We use a Map of JSON-stringified row -> count to handle exact matches
+  const rowCountsMap = new Map<string, { row: any; count: number }>();
 
   file.data.forEach((row, index) => {
     try {
@@ -181,17 +182,25 @@ const processSource = (
       );
       const signature = JSON.stringify(normalizedRow); // Simple signature for uniqueness
 
-      // If signature exists, it's a duplicate row
-      if (!uniqueRowsMap.has(signature)) {
-        uniqueRowsMap.set(signature, normalizedRow);
+      if (rowCountsMap.has(signature)) {
+        rowCountsMap.get(signature)!.count++;
+      } else {
+        rowCountsMap.set(signature, { row: normalizedRow, count: 1 });
       }
     } catch (e) {
       // Skip bad rows
     }
   });
 
-  const validUniqueRows = Array.from(uniqueRowsMap.values());
-  const duplicatesCount = file.data.length - validUniqueRows.length;
+  const allRowEntries = Array.from(rowCountsMap.values());
+  const validUniqueRows = allRowEntries
+    .filter((entry) => entry.count === 1)
+    .map((entry) => entry.row);
+  const duplicatedRows = allRowEntries.filter((entry) => entry.count > 1);
+  const duplicatesCount = duplicatedRows.reduce(
+    (sum, entry) => sum + entry.count,
+    0
+  );
 
   if (duplicatesCount > 0) {
     addLog(
@@ -227,6 +236,7 @@ const processSource = (
   return {
     validUniqueRows,
     duplicatesCount,
+    duplicatedRows,
     keyToRowsMap,
     allKeys,
   };
@@ -304,6 +314,8 @@ export const runComparison = (
     timestamp: new Date().toISOString(),
     rowsMissingInB,
     rowsMissingInA,
+    duplicatedRowsA: procA.duplicatedRows,
+    duplicatedRowsB: procB.duplicatedRows,
     sourceAName: fileA.name,
     sourceBName: fileB.name,
     stats: {
