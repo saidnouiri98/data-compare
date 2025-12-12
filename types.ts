@@ -35,7 +35,7 @@ export interface ComparisonConfig {
 export interface LogEntry {
   id: string;
   timestamp: string;
-  level: 'info' | 'warning' | 'error' | 'success';
+  level: "info" | "warning" | "error" | "success";
   message: string;
 }
 
@@ -51,10 +51,17 @@ export interface ComparisonStats {
   matched: number;
 }
 
+export interface DuplicateEntry {
+  row: any;
+  count: number;
+}
+
 export interface ComparisonResult {
   stats: ComparisonStats;
   rowsMissingInB: any[];
   rowsMissingInA: any[];
+  duplicatedRowsA: DuplicateEntry[];
+  duplicatedRowsB: DuplicateEntry[];
   timestamp: string;
   sourceAName: string;
   sourceBName: string;
