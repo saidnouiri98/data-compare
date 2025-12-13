@@ -211,12 +211,13 @@ const processSource = (
     );
   }
 
-  // 2. Map Unique Rows to Comparison Keys
-  // One Key might map to multiple unique rows (e.g. if key is ID, but rows differ by Date)
+  // 2. Map All Rows to Comparison Keys (including duplicates for missing detection)
+  // One Key might map to multiple rows (e.g. if key is ID, but rows differ by Date, or duplicates)
+  const allRows = allRowEntries.map((entry) => entry.row);
   const keyToRowsMap = new Map<string, any[]>();
   const allKeys = new Set<string>();
 
-  validUniqueRows.forEach((row) => {
+  allRows.forEach((row) => {
     // Build Key
     const keyParts = config.keyMappings.map((mapping) => {
       const fieldName = isSourceA ? mapping.fieldA : mapping.fieldB;
@@ -232,6 +233,25 @@ const processSource = (
     }
     keyToRowsMap.get(key)!.push(row);
   });
+
+  // Log keys from valid rows
+  addLog("info", `${isSourceA ? "Source A" : "Source B"}: ${allKeys.size} unique keys from valid rows.`);
+
+  // Compute keys from duplicated rows to validate assumption
+  const duplicateKeys = new Set<string>();
+  duplicatedRows.forEach((entry) => {
+    const row = entry.row;
+    const keyParts = config.keyMappings.map((mapping) => {
+      const fieldName = isSourceA ? mapping.fieldA : mapping.fieldB;
+      return row[fieldName];
+    });
+    const key = keyParts.join("|");
+    duplicateKeys.add(key);
+  });
+  addLog("info", `${isSourceA ? "Source A" : "Source B"}: ${duplicateKeys.size} unique keys from duplicated rows.`);
+
+  const missingDupKeys = Array.from(duplicateKeys).filter(k => !allKeys.has(k));
+  addLog("info", `${isSourceA ? "Source A" : "Source B"}: ${missingDupKeys.length} keys from duplicates not in valid keys.`);
 
   return {
     validUniqueRows,
